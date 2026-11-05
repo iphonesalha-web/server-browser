@@ -1,0 +1,47 @@
+name: Build IPA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Build (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild -project ServerBrowser.xcodeproj -target ServerBrowser \
+            -configuration Release -sdk iphoneos \
+            SYMROOT="$PWD/build" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build 2>&1 | grep -E "error:|warning: .*Swift|BUILD (SUCCEEDED|FAILED)|\*\*" || true
+          test -d build/Release-iphoneos/ServerBrowser.app
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Release-iphoneos/ServerBrowser.app Payload/
+          zip -qry ServerBrowser.ipa Payload
+          ls -lh ServerBrowser.ipa
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v1.0.${{ github.run_number }}" ServerBrowser.ipa \
+            --title "متصفح السيرفرات v1.0.${{ github.run_number }}" \
+            --notes "ملف IPA غير موقّع — وقّعه بشهادتك في ESign ثم ثبّته." \
+            --latest
