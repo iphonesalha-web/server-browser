@@ -41,7 +41,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "v1.0.${{ github.run_number }}" ServerBrowser.ipa \
-            --title "متصفح السيرفرات v1.0.${{ github.run_number }}" \
+          gh release create "v1.1.${{ github.run_number }}" ServerBrowser.ipa \
+            --title "متصفح السيرفرات v1.1.${{ github.run_number }}" \
             --notes "ملف IPA غير موقّع — وقّعه بشهادتك في ESign ثم ثبّته." \
             --latest

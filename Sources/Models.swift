@@ -7,11 +7,22 @@ struct Panel: Identifiable, Codable, Hashable {
     var url: String
     var username: String
 
+    /// بدون http/https: نستخدم http إذا كان في الرابط منفذ غير 443 (مثل :2082)، وإلا https
     var normalizedURL: URL? {
         var s = url.trimmingCharacters(in: .whitespacesAndNewlines)
         let lower = s.lowercased()
-        if !lower.hasPrefix("http://") && !lower.hasPrefix("https://") { s = "https://" + s }
+        if !lower.hasPrefix("http://") && !lower.hasPrefix("https://") {
+            let hostPart = s.split(separator: "/", maxSplits: 1).first.map(String.init) ?? s
+            let port = hostPart.split(separator: ":").dropFirst().first.map(String.init)
+            let plain = port != nil && port != "443" && port != "2083" && port != "8443"
+            s = (plain ? "http://" : "https://") + s
+        }
         return URL(string: s)
+    }
+
+    var hasExplicitScheme: Bool {
+        let lower = url.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return lower.hasPrefix("http://") || lower.hasPrefix("https://")
     }
 
     var host: String { normalizedURL?.host ?? url }
